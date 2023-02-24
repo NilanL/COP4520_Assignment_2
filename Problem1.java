@@ -3,18 +3,21 @@ import java.util.*;
 public class Problem1 
 {
     Thread [] threads;
+    MazeRunnable [] runnables;
     double execTime;
     int numberOfGuests;
 
     volatile int counter = 0;
     volatile boolean hasCupcake = true;
     volatile boolean allGuestsHaveGone = false;
+    volatile boolean change = false;
 
     Problem1()
     {
         execTime = 0;
         numberOfGuests = 8;
         threads = new Thread [8];
+        runnables = new MazeRunnable [8];
     }
 
     Problem1(int n)
@@ -22,6 +25,7 @@ public class Problem1
         execTime = 0;
         numberOfGuests = n;
         threads = new Thread [n];
+        runnables = new MazeRunnable [n];
     }
 
     public double getExecutionTime()
@@ -40,56 +44,79 @@ public class Problem1
             this.isLeader = isLeader;
         }
 
+        public void wake()
+        {
+            synchronized(this)
+            {       
+                this.notify();
+            }
+        }
+
         @Override
         public void run()
         {
-            synchronized(this)
-            {
-                
-                //System.out.println((isLeader ? "Leader" : "Guest ")  + " | threadID - " + Thread.currentThread().getId() + " | Counted people: " + counter + " | Has Cupcake: " + hasCupcake);
-                
-                // Labyrinth stuff happens here
-                // But for the sake of performance let's skip that part
-                if (isLeader)
-                {
-                    if (hasCupcake)
+        
+                while (true)
+                { 
+                    synchronized(this)
+                    {       
+                    // Labyrinth stuff happens here
+                    // But for the sake of performance let's skip that part
+
+
+                    if (isLeader)
                     {
-                        System.out.println("Guest #" + guestNumber + " has gone through the maze! | LEADER | " + " found a cupcake  | " + counter + " guests counted");
-
-                        // Leave cupcake alone
-                    }
-                    else
-                    {
-                        // Ask for another cupcake
-                        hasCupcake = true;
-
-                        counter++;
-
-                        System.out.println("Guest #" + guestNumber + " has gone through the maze! | LEADER | " + " found no cupcake | " + counter + " guests counted");
-
-                        // If leader has accounted for all guests
-                        // other than himself/herself
-                        if (counter == numberOfGuests - 1)
+                        if (hasCupcake)
                         {
-                            allGuestsHaveGone = true;
-                            System.out.println("Guest #" + guestNumber + " says ALL GUESTS HAVE GONE");
+                            System.out.println("Guest #" + guestNumber + " has gone through the maze! | LEADER | " + " found a cupcake  | " + counter + " guests counted");
+
+                            // Leave cupcake alone
+                        }
+                        else
+                        {
+                            // Ask for another cupcake
+                            hasCupcake = true;
+
+                            counter++;
+
+                            System.out.println("Guest #" + guestNumber + " has gone through the maze! | LEADER | " + " found no cupcake | " + counter + " guests counted");
+
+                            // If leader has accounted for all guests
+                            // other than himself/herself
+                            if (counter == numberOfGuests - 1)
+                            {
+                                allGuestsHaveGone = true;
+                                System.out.println("Guest #" + guestNumber + " says ALL GUESTS HAVE GONE");
+
+                                break;
+                            }
                         }
                     }
-                }
-                else
-                {
-                    if (hasCupcake)
-                    {
-                        // Eat cupcake
-                        hasCupcake = false;
-
-                        System.out.println("Guest #" + guestNumber + " has gone through the maze! | normal | " + " found a cupcake");
-                    }
                     else
                     {
-                        // Do not ask for another cupcake
-                        System.out.println("Guest #" + guestNumber + " has gone through the maze! | normal | " + " found no cupcake");
+                        if (hasCupcake)
+                        {
+                            // Eat cupcake
+                            hasCupcake = false;
+
+                            System.out.println("Guest #" + guestNumber + " has gone through the maze! | normal | " + " found a cupcake");
+                        }
+                        else
+                        {
+                            // Do not ask for another cupcake
+                            System.out.println("Guest #" + guestNumber + " has gone through the maze! | normal | " + " found no cupcake");
+                        }
                     }
+                    
+                    try 
+                    {
+                        this.wait();
+                    } 
+                    catch (InterruptedException e) 
+                    {
+                        e.printStackTrace();
+                    }
+
                 }
             }
         }
@@ -102,32 +129,42 @@ public class Problem1
         long startTime = System.nanoTime();
         Random rand = new Random((long)Math.random());
         MazeRunnable leaderRunnable = new MazeRunnable(1, true);
-
+        
         while (!allGuestsHaveGone)
         {
             // Randomly selected guest
             int index = rand.nextInt(threads.length);
-            
+
             // index 0 is the designated leader
             if (index == 0)
             {
-                threads[index] = new Thread(leaderRunnable);
+                if (threads[index] == null)
+                    threads[index] = new Thread(leaderRunnable);
             }
             else
             {
-                threads[index] = new Thread(new MazeRunnable(index, false));
+                if (threads[index] == null)
+                {
+                    runnables[index] = new MazeRunnable(index + 1, false);
+
+                    threads[index] = new Thread(runnables[index]);
+                }
             }
 
-            threads[index].start();
-
-            try
+            if (threads[index].getState().equals(Thread.State.NEW))
             {
-                threads[index].join();
+                threads[index].start();
             }
-            catch (InterruptedException e)
+            else
             {
-                System.out.println(e.getMessage());
-                return;
+                if (index == 0)
+                {
+                    leaderRunnable.wake();
+                }
+                else
+                {
+                    runnables[index].wake();
+                }
             }
         }
 
