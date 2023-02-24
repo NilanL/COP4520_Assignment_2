@@ -49,13 +49,33 @@ public class Problem2
             return guestNumber;
         }
 
-        @Override
-        public void run()
+        public void wake()
         {
             synchronized(this)
             {
-                // View vase
-                System.out.println("Guest #" + (guestNumber + 1) + " has viewed the vase");
+                this.notify();
+            }
+        }
+
+        @Override
+        public void run()
+        {
+            while (true)
+            {
+                synchronized(this)
+                {
+                    // View vase
+                    System.out.println("Guest #" + (guestNumber + 1) + " has viewed the vase");
+
+                    try 
+                    {
+                        this.wait();
+                    } 
+                    catch (InterruptedException e) 
+                    {
+                        e.printStackTrace();
+                    }                
+                }
             }
         }
     }
@@ -72,7 +92,8 @@ public class Problem2
             try
             {
                 guestRunnables[i] = new VaseRunnable(i);
-                vaseQueue.enq(new Thread(guestRunnables[i]));
+                threads[i] = new Thread(guestRunnables[i]);
+                vaseQueue.enq(threads[i]);
             }
             catch (Exception e)
             {
@@ -90,7 +111,7 @@ public class Problem2
                 // that they re-enter the queue
                 if (prevGuestNumber != -1 && rand.nextInt(4) < 3)
                 {
-                    vaseQueue.enq(new Thread(guestRunnables[prevGuestNumber]));
+                    vaseQueue.enq(threads[prevGuestNumber]);
                 }
 
                 // Last guest let's next guest know that
@@ -99,16 +120,13 @@ public class Problem2
                 prevGuestNumber = vaseQueue.getLastGuestNumber();
 
                 // View the vase
-                guest.start();
-
-                try
+                if (guest.getState().equals(Thread.State.NEW))
                 {
-                    guest.join();
+                    guest.start();
                 }
-                catch (InterruptedException e)
+                else
                 {
-                    System.out.println(e.getMessage());
-                    return;
+                    guestRunnables[prevGuestNumber].wake();    
                 }
             }
             catch (EmptyQueueException e)
