@@ -97,6 +97,7 @@ public class Main {
         part1(scanner);
         part2(scanner);
 
+        System.out.println("Please exit with your terminal's exit command, doesn't end automatically for some reason (issue with input detection)");
         scanner.close();
     }
 }
