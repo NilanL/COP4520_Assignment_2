@@ -7,13 +7,14 @@ Figuring out a proper solution to the cupcake problem was difficult, however I h
 </br>
 ### Experimental Evaulation
 Multiple different implementations were attempted, however I converged on a model of a while loop which will repeat until the flag "allGuestsHaveGone" is set to true. This flag is only set by the "leader guest" and is analogous to them stating that all guests have been accounted for. Threads are instantiated, ran, and continued in random order with Java's Random object. To test the implementation, I set a timer on the operation and tested with 10, 100, and 1000 guests. I then looked at the printed statements to ensure that the guest threads are in fact being properly created and ran, and that the order of this operation is properly random. I also tested the run time effeciency to ensure that the 100 guests runtime was below 1 second.
-
-## Part 2
 </br>
+## Part 2
 
 ### Methodology
+The vase problem seemed more intuitive to me. I selected the third option "Every guest exiting the room was responsible to notify the guest standing in front of the queue that the showroom is available. Guests were allowed to queue multiple times." This seemed the most effective, as it would ensure that every guest has an opportunity to view the vase, and it also ensures that those who wish to see the vase again will wait a fair amount of time, as they will be in the back of the queue. It would also create the least conflict and issues among the guests as each individual would know when they would be able to view the vase. The other two solutions left too much up to chance, and some guests may have never gotten the fair opportunity to view the vase. However, the queue solution does create the problem of causing long wait times for guests, as a guest would have to wait for the entire duration of that line's length. They would not be able to go off to somewhere more comfortable or more entertaining to wait. They’d be stuck to their position in line.
 
 ### Experimental Evaulation
+I implemented the solution using a LockBasedQueue solution that was inspired by the book. I tested the  solution 
 
 ## Running
 
